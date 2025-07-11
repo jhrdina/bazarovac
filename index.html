@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Bazarovač - Prohledávejte české bazary najednou">
+    <title>Bazarovač</title>
+    <!-- Tailwind CSS and daisyUI via CDN -->
+    <style>
+        :root {
+            --color-primary: rgb(249 115 22); /* Using Tailwind's orange-500 */
+            --color-primary-focus: rgb(249 115 22); /* Using Tailwind's orange-500 */
+            --color-primary-content: white; /* Using Tailwind's orange-500 */
+        }
+    </style>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    
+</head>
+<body class="min-h-screen bg-base-100">
+    <div class="container mx-auto px-4 py-8">
+        <main class="max-w-2xl mx-auto">
+            <!-- Hero section with search -->
+            <div class="text-center mb-8">
+                <h1 class="text-4xl font-bold mb-4">Bazarovač</h1>
+                <p class="text-lg mb-8">Prohledávejte všechny české bazary najednou</p>
+                
+                <form id="searchForm" class="flex flex-col gap-4" onsubmit="handleSearch(event)">
+                    <div class="join w-full">
+                        <input 
+                            type="text" 
+                            id="searchInput"
+                            placeholder="Co hledáte?" 
+                            class="input input-bordered join-item flex-1"
+                            required
+                        />
+                        <input 
+                            type="number" 
+                            id="maxPrice"
+                            placeholder="Maximální cena" 
+                            class="input input-bordered w-32 join-item"
+                            min="0"
+                            step="1"
+                        />
+                        <button type="submit" class="btn btn-primary join-item">
+                            Hledat
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Search History -->
+                <div id="searchHistory" class="mt-4 hidden">
+                    <h3 class="text-sm font-medium mb-2 text-left">Historie vyhledávání:</h3>
+                    <div id="searchHistoryList" class="flex flex-wrap gap-2 justify-center">
+                    </div>
+                </div>
+
+                <!-- Marketplace list -->
+                <div class="mt-8 text-left">
+                    <h2 class="text-xl font-semibold mb-4">Prohledávané bazary:</h2>
+                    <ul id="marketplaceList" class="list-disc list-inside space-y-2 text-sm opacity-70">
+                    </ul>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const MARKETPLACES = [
+            {
+                name: 'Facebook Marketplace',
+                buildUrl(query, maxPrice) {
+                    const q = encodeURIComponent(query);
+                    return `https://www.facebook.com/marketplace/107645375935528/search/?query=${q}${maxPrice ? `&maxPrice=${maxPrice}` : ''}`;
+                }
+            },
+            {
+                name: 'Bazoš',
+                buildUrl(query, maxPrice) {
+                    const q = encodeURIComponent(query);
+                    return `https://www.bazos.cz/search.php?hledat=${q}${maxPrice ? `&cenado=${maxPrice}` : ''}`;
+                }
+            },
+            {
+                name: 'Sbazar',
+                buildUrl(query, maxPrice) {
+                    const q = encodeURIComponent(query);
+                    return `https://www.sbazar.cz/hledej/${q}${maxPrice ? `/cena-do-${maxPrice}-kc` : ''}`;
+                }
+            },
+            {
+                name: 'Vinted',
+                buildUrl(query, maxPrice) {
+                    const q = encodeURIComponent(query);
+                    return `https://www.vinted.cz/catalog?search_text=${q}${maxPrice ? `&price_to=${maxPrice}` : ''}`;
+                }
+            },
+            {
+                name: 'Aukro',
+                buildUrl(query, maxPrice) {
+                    const q = encodeURIComponent(query);
+                    return `https://aukro.cz/vysledky-vyhledavani?text=${q}${maxPrice ? `&priceMax=${maxPrice}` : ''}`;
+                }
+            },
+            {
+                name: 'eBay',
+                buildUrl(query, maxPrice) {
+                    const q = encodeURIComponent(query);
+                    return `https://www.ebay.com/sch/i.html?_nkw=${q}${maxPrice ? `&_udhi=${maxPrice}` : ''}`;
+                }
+            }
+        ];
+
+        // Generate marketplace list
+        const marketplaceList = document.getElementById('marketplaceList');
+        MARKETPLACES.forEach(marketplace => {
+            const li = document.createElement('li');
+            li.textContent = marketplace.name;
+            marketplaceList.appendChild(li);
+        });
+
+        // Search history management
+        const SEARCH_HISTORY_KEY = 'bazarovac_search_history';
+        const MAX_HISTORY_ITEMS = 10;
+
+        function saveSearchToHistory(query, maxPrice = null) {
+            let history = getSearchHistory();
+            
+            // Create search object
+            const searchItem = {
+                query: query,
+                maxPrice: maxPrice,
+                timestamp: Date.now()
+            };
+            
+            // Remove existing identical search
+            history = history.filter(item => !(item.query === query && item.maxPrice === maxPrice));
+            
+            // Add to beginning of array
+            history.unshift(searchItem);
+            
+            // Keep only last MAX_HISTORY_ITEMS
+            history = history.slice(0, MAX_HISTORY_ITEMS);
+            
+            // Save to localStorage
+            localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(history));
+            
+            // Update display
+            displaySearchHistory();
+        }
+
+        function getSearchHistory() {
+            try {
+                const history = localStorage.getItem(SEARCH_HISTORY_KEY);
+                return history ? JSON.parse(history) : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function removeSearchFromHistory(index) {
+            let history = getSearchHistory();
+            history.splice(index, 1);
+            localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(history));
+            displaySearchHistory();
+        }
+
+        function displaySearchHistory() {
+            const history = getSearchHistory();
+            const historyContainer = document.getElementById('searchHistory');
+            const historyList = document.getElementById('searchHistoryList');
+            
+            if (history.length === 0) {
+                historyContainer.classList.add('hidden');
+                return;
+            }
+            
+            historyContainer.classList.remove('hidden');
+            historyList.innerHTML = '';
+            
+            history.forEach((item, index) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'relative inline-block';
+                
+                const button = document.createElement('button');
+                button.className = 'btn btn-sm btn-outline btn-neutral pr-8';
+                button.textContent = item.maxPrice ? `${item.query} (do ${item.maxPrice} Kč)` : item.query;
+                button.onclick = () => performSearch(item.query, item.maxPrice);
+                
+                const deleteButton = document.createElement('button');
+                deleteButton.className = 'absolute right-1 top-1/2 transform -translate-y-1/2 w-4 h-4 flex items-center justify-center text-xs text-gray-500 hover:text-red-500 hover:bg-red-100 rounded-full transition-colors';
+                deleteButton.innerHTML = '×';
+                deleteButton.title = 'Odstranit z historie';
+                deleteButton.onclick = (e) => {
+                    e.stopPropagation();
+                    removeSearchFromHistory(index);
+                };
+                
+                wrapper.appendChild(button);
+                wrapper.appendChild(deleteButton);
+                historyList.appendChild(wrapper);
+            });
+        }
+
+        function performSearch(query, maxPrice = null) {
+            // Update form inputs
+            document.getElementById('searchInput').value = query;
+            document.getElementById('maxPrice').value = maxPrice || '';
+            
+            // Perform the search
+            executeSearch(query, maxPrice);
+        }
+
+        function executeSearch(query, maxPrice) {
+            // Open each search in a new tab
+            MARKETPLACES.forEach(marketplace => {
+                const url = marketplace.buildUrl(query, maxPrice);
+                window.open(url, '_blank');
+            });
+        }
+
+        function handleSearch(event) {
+            event.preventDefault();
+            
+            const searchInput = document.getElementById('searchInput');
+            const maxPriceInput = document.getElementById('maxPrice');
+            
+            const query = searchInput.value.trim();
+            const maxPrice = maxPriceInput.value ? parseInt(maxPriceInput.value) : null;
+            
+            if (!query) return;
+
+            // Save to history
+            saveSearchToHistory(query, maxPrice);
+            
+            // Execute search
+            executeSearch(query, maxPrice);
+        }
+
+        // Initialize search history on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            displaySearchHistory();
+        });
+    </script>
+</body>
+</html> 
