@@ -1,14 +1,8 @@
 #!/bin/bash
 
-# Bazarovac GitHub Pages Deployment Script
+# Bazarovac Build Script
 
-echo "🚀 Building Bazarovac..."
-
-# Check if bazarovac.html exists
-if [ ! -f "bazarovac.html" ]; then
-    echo "❌ Error: bazarovac.html not found!"
-    exit 1
-fi
+echo "🏗️ Building Bazarovac..."
 
 # Create dist folder
 echo "📁 Creating dist folder..."
@@ -19,5 +13,11 @@ mkdir -p dist
 echo "📋 Copying bazarovac.html to dist/index.html..."
 cp bazarovac.html dist/index.html
 
+# Create CNAME file
+echo "📝 Creating CNAME file..."
+echo "bazary.hrdinajan.cz" > dist/CNAME
+
 echo "📝 Contents of dist folder:"
 ls -la dist/
+
+echo "✅ Build complete!"
