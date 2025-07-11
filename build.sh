@@ -2,7 +2,7 @@
 
 # Bazarovac GitHub Pages Deployment Script
 
-echo "🚀 Deploying Bazarovac to GitHub Pages..."
+echo "🚀 Building Bazarovac..."
 
 # Check if bazarovac.html exists
 if [ ! -f "bazarovac.html" ]; then
@@ -21,10 +21,3 @@ cp bazarovac.html dist/index.html
 
 echo "📝 Contents of dist folder:"
 ls -la dist/
-
-# Deploy dist folder to gh-pages
-echo "🌐 Deploying dist folder to GitHub Pages..."
-npx gh-pages -d dist
-
-echo "✅ Deployment complete!"
-echo "🔗 Your site will be available at: https://jhrdina.github.io/bazarovac"

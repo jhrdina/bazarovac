@@ -1,0 +1,12 @@
+{
+  "name": "bazarovac",
+  "version": "1.0.0",
+  "description": "Prohledávejte všechny české bazary najednou",
+  "private": true,
+  "scripts": {
+    "deploy": "sh build.sh && gh-pages -d dist"
+  },
+  "devDependencies": {
+    "gh-pages": "^6.1.1"
+  }
+} 
