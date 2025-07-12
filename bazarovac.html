@@ -2,7 +2,7 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <meta name="description" content="Bazarovač - Prohledávejte české bazary najednou">
     <title>Bazarovač</title>
     <!-- Tailwind CSS and daisyUI via CDN -->
@@ -230,8 +230,8 @@
             document.getElementById('searchInput').value = query;
             document.getElementById('maxPrice').value = maxPrice || '';
             
-            // Focus the search input
-            document.getElementById('searchInput').focus();
+            // Focus the search button
+            document.querySelector('button[type="submit"]').focus();
         }
 
         function executeSearch(query, maxPrice) {
