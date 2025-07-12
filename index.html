@@ -58,8 +58,8 @@
                 <!-- Marketplace list -->
                 <div class="mt-8 text-left">
                     <h2 class="text-xl font-semibold mb-4">Prohledávané bazary:</h2>
-                    <ul id="marketplaceList" class="list-disc list-inside space-y-2 text-sm opacity-70">
-                    </ul>
+                    <div id="marketplaceList" class="flex flex-wrap gap-2">
+                    </div>
                 </div>
             </div>
         </main>
@@ -114,9 +114,27 @@
         // Generate marketplace list
         const marketplaceList = document.getElementById('marketplaceList');
         MARKETPLACES.forEach(marketplace => {
-            const li = document.createElement('li');
-            li.textContent = marketplace.name;
-            marketplaceList.appendChild(li);
+            const button = document.createElement('button');
+            button.className = 'btn btn-sm btn-outline';
+            button.textContent = marketplace.name;
+            button.onclick = () => {
+                const query = document.getElementById('searchInput').value.trim();
+                const maxPrice = document.getElementById('maxPrice').value ? parseInt(document.getElementById('maxPrice').value) : null;
+                
+                if (!query) {
+                    // If no query, focus the search input
+                    document.getElementById('searchInput').focus();
+                    return;
+                }
+                
+                // Open just this marketplace's search
+                const url = marketplace.buildUrl(query, maxPrice);
+                window.open(url, '_blank');
+                
+                // Save to history
+                saveSearchToHistory(query, maxPrice);
+            };
+            marketplaceList.appendChild(button);
         });
 
         // Search history management
@@ -207,8 +225,8 @@
             document.getElementById('searchInput').value = query;
             document.getElementById('maxPrice').value = maxPrice || '';
             
-            // Perform the search
-            executeSearch(query, maxPrice);
+            // Focus the search input
+            document.getElementById('searchInput').focus();
         }
 
         function executeSearch(query, maxPrice) {
